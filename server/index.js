@@ -36,9 +36,6 @@ app.get("/api/onlinejobs", async (req, res) => {
 
     const $ = cheerio.load(html);
 
-    // Get first element with class "result"
-    // const result = $(".results").first().text();
-
     const jobs = [];
 
     $(".results .jobpost-cat-box").each((i, el) => {
@@ -55,8 +52,6 @@ app.get("/api/onlinejobs", async (req, res) => {
       });
     });
 
-    console.log(jobs);
-    
     res.json({ jobs, url: urlWithQuery });
   } catch (err) {
     console.error("Proxy error:", err);
