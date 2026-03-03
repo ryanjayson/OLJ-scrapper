@@ -6,6 +6,7 @@ interface jobResult {
   snippet: string;
   url: string;
   datePosted : string;
+  payRate : string;
 }
 
 const DOMAIN : string= "https://www.onlinejobs.ph";
@@ -126,7 +127,7 @@ export const App: React.FC = () => {
       </section>
 
       <section className="results-section">
-        <h2>Results</h2>
+        <h2>Results  ({results.length})</h2>
         {isLoading && <p className="muted">Fetching data...</p>}
         {!isLoading && results.length === 0 && !error && (
           <p className="muted">
@@ -148,6 +149,9 @@ export const App: React.FC = () => {
                 </a>
                 <p className="result-snippet">{result.snippet}</p>
                 <p className="result-url">{result.datePosted}</p>
+                <p className="result-url">{result.payRate}</p>
+
+                
               </li>
             ))}
           </ul>

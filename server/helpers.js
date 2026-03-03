@@ -126,11 +126,17 @@ export const extractJobsFromHtml = ($, startDate, endDate) => {
       .filter((_, el) => el.type === "text")
       .text()
       .trim();
-
+    
+    const priceText =  $(el).find("dl.no-gutters dd").text().trim();
+    const amount = priceText.match(/\d+/)?.[0];
+    const payRate = $(el).find("a").last()
+  
+      
     jobs.push({
       title: title,
       url: $(el).find("a").attr("href"),
       datePosted: postedDate ? formatPostedDate(postedDate) : datePosted,
+      payRate: priceText,
     });
   });
 
