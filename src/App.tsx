@@ -12,6 +12,8 @@ const DOMAIN : string= "https://www.onlinejobs.ph";
 
 export const App: React.FC = () => {
   const [keyword, setKeyword] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<jobResult[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -28,9 +30,20 @@ export const App: React.FC = () => {
     setIsLoading(true);
 
     try {
+      const params = new URLSearchParams({
+        keyword: keyword.trim(),
+      });
+
+      if (startDate) {
+        params.set("startDate", startDate);
+      }
+
+      if (endDate) {
+        params.set("endDate", endDate);
+      }
 
       const response = await fetch(
-        `/api/onlinejobs?keyword=${encodeURIComponent(keyword)}`
+        `/api/onlinejobs?${params.toString()}`
       );
 
       if (!response.ok) {
@@ -38,8 +51,7 @@ export const App: React.FC = () => {
       }
 
       const data: { jobs: jobResult[]; url: string } = await response.json();
-      debugger;
-      
+
       setResults(data.jobs)
       
     } catch (err) {
@@ -84,6 +96,32 @@ export const App: React.FC = () => {
             {isLoading ? "Searching..." : "Search"}
           </button>
         </div>
+        <div className="search-row">
+          <div className="date-field">
+            <label className="field-label" htmlFor="start-date-input">
+              From
+            </label>
+            <input
+              id="start-date-input"
+              className="search-input"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+          <div className="date-field">
+            <label className="field-label" htmlFor="end-date-input">
+              To
+            </label>
+            <input
+              id="end-date-input"
+              className="search-input"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+        </div>
         {error && <p className="error-text">{error}</p>}
       </section>
 
@@ -98,8 +136,8 @@ export const App: React.FC = () => {
 
         {!isLoading && results.length > 0 && (
           <ul className="results-list">
-            {results.map((result) => (
-              <li key={result.id} className="result-item">
+            {results.map((result, index) => (
+              <li key={index} className="result-item">
                 <a
                   href={`${DOMAIN + result.url} `}
                   target="_blank"
