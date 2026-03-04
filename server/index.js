@@ -1,8 +1,7 @@
 import express from "express";
 import cors from "cors";
-import fetch from "node-fetch";
 import * as cheerio from "cheerio";
-import { buildOnlineJobsSearchUrl, getStringQueryParam, extractJobsFromHtml } from "./helpers.js";
+import { buildOnlineJobsSearchUrl, getStringQueryParam, extractJobsFromHtml, fetchHtmlFromUrl, extractJobsPages} from "./helpers.js";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -18,13 +17,7 @@ app.get("/api/onlinejobs", async (req, res) => {
   const urlWithQuery = buildOnlineJobsSearchUrl(keyword);
   console.log(urlWithQuery);
   try {
-    const response = await fetch(urlWithQuery, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-      }
-    });
+    const response = await fetchHtmlFromUrl(urlWithQuery);
 
     if (!response.ok) {
       return res
@@ -34,12 +27,37 @@ app.get("/api/onlinejobs", async (req, res) => {
 
     const html = await response.text();
     const $ = cheerio.load(html);
-    console.log($);
+    let jobs = [];
+    const initialListJobs = extractJobsFromHtml($, startDate, endDate);
+    jobs = initialListJobs;
 
-
-    const jobs = extractJobsFromHtml($, startDate, endDate);
+    const totalPages = extractJobsPages($);
+    console.log(totalPages);
+    
+    for (let page = 2; page <= totalPages; page++) {
+      const jobsToDisplay = page * 30;
+    
+      const pagedUrlWithQuery = buildOnlineJobsSearchUrl(keyword, jobsToDisplay);
+      console.log(pagedUrlWithQuery);
+    
+      const pagedResponse = await fetchHtmlFromUrl(pagedUrlWithQuery);
+    
+      if (!pagedResponse.ok) {
+        return res
+          .status(pagedResponse.status)
+          .json({ error: `Upstream error: ${pagedResponse.status}` });
+      }
+    
+      const pagedHtml = await pagedResponse.text();
+      const $$ = cheerio.load(pagedHtml);
+    
+      const pagedListJobs = extractJobsFromHtml($$, startDate, endDate);
+    
+      // If you are collecting results:
+      jobs.push(...pagedListJobs);
+    }
     console.log(jobs);
-
+    
     res.json({ jobs, url: urlWithQuery });
   } catch (err) {
     console.error("Proxy error:", err);

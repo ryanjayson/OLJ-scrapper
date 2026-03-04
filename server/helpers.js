@@ -1,18 +1,34 @@
+import fetch from "node-fetch";
+
 const ONLINE_JOBS_SEARCH_URL = "https://www.onlinejobs.ph/jobseekers/jobsearch";
+const ONLINE_JOBS_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+  Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+};
 
 export const getStringQueryParam = (query, key) => {
   const value = query?.[key];
   return typeof value === "string" ? value.trim() : "";
 };
 
-export const buildOnlineJobsSearchUrl = (keyword) => {
+export const buildOnlineJobsSearchUrl = (keyword, page = "") => {
   if (!keyword) {
     return ONLINE_JOBS_SEARCH_URL;
   }
 
   const params = new URLSearchParams({ jobkeyword : keyword });
-  return `${ONLINE_JOBS_SEARCH_URL}?${params.toString()}&skill_tags=`;
+  const paged = page ? `/${page}` : "";
+  return `${ONLINE_JOBS_SEARCH_URL}${paged}?${params.toString()}&skill_tags=`;
 
+};
+
+export const fetchHtmlFromUrl = async (url) => {
+  const response = await fetch(url, {
+    headers: ONLINE_JOBS_HEADERS,
+  });
+
+  return response;
 };
 
 const parseInputDate = (value, isEndDate = false) => {
@@ -100,7 +116,6 @@ const formatPostedDate = (date) => {
 export const extractJobsFromHtml = ($, startDate, endDate) => {
   const fromDate = parseInputDate(startDate, false);
   const toDate = parseInputDate(endDate, true);
-
   const jobs = [];
   $(".results .jobpost-cat-box").each((i, el) => {
     const datePosted = $(el).find("a").find("[data-temp]").text().trim();
@@ -108,7 +123,7 @@ export const extractJobsFromHtml = ($, startDate, endDate) => {
 
     if (fromDate || toDate) {
       if (!postedDate) {
-        return;
+        return; 
       }
 
       if (fromDate && postedDate < fromDate) {
@@ -141,4 +156,10 @@ export const extractJobsFromHtml = ($, startDate, endDate) => {
   });
 
   return jobs;
+};
+
+export const extractJobsPages = ($) => {
+  const fs12Text = $(".results .col-8 .fs-12").first().text().trim().replace(/^Displaying 30 out of\s*/i, "");
+  const totalJobsCount = fs12Text.split(/\s+/)[0];
+  return  Math.ceil(totalJobsCount / 30);
 };
